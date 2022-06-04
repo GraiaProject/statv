@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 from collections import deque
-from typing import Any, Callable, Generic, TypeVar, overload
+from typing import Any, Callable, Generic, Protocol, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -12,16 +12,31 @@ EllipsisType = type(...)
 T = TypeVar("T")
 
 
+class StatsValidator(Protocol[T]):
+    def __call__(self, stats: Stats[T], past: T, current: T) -> T:
+        ...
+
+
 class Stats(Generic[T]):
     id: str
 
     default: T | EllipsisType = ...
     default_factory: Callable[[], T] | None = None
 
-    def __init__(self, id: str, *, default: T = ..., default_factory: Callable[[], T] | None = None) -> None:
+    _validator: StatsValidator[T] | None
+
+    def __init__(
+        self,
+        id: str,
+        *,
+        default: T = ...,
+        default_factory: Callable[[], T] | None = None,
+        validator: StatsValidator[T] | None = None,
+    ) -> None:
         self.id = id
         self.default = default
         self.default_factory = default_factory
+        self._validator = validator
 
     @overload
     def __get__(self, instance: None, owner: None) -> Stats:
@@ -31,7 +46,9 @@ class Stats(Generic[T]):
     def __get__(self, instance: Statv, owner: type[Statv]) -> T:
         ...
 
-    def __get__(self, instance: Statv | None, owner: type[Statv] | None = None) -> T | Stats:
+    def __get__(
+        self, instance: Statv | None, owner: type[Statv] | None = None
+    ) -> T | Stats:
         if instance is None:
             return self
 
@@ -41,13 +58,23 @@ class Stats(Generic[T]):
         return instance._stats[self.id]
 
     def __set__(self, instance: Statv, value: T) -> None:
+        if self._validator:
+            value = self._validator(self, instance._stats[self.id], value)
         instance._stats[self.id] = value
 
         for ftr in instance._waiters:
             ftr.set_result(instance)
+    
+    def validator(self, validator: StatsValidator[T]):
+        if self._validator:
+            raise RuntimeError(f"{self.id} already has a validator")
+        self._validator = validator
+        return validator
 
 
-def stats(id: str, *, default: Any = ..., default_factory: Callable[[], Any] | None = None) -> Any:
+def stats(
+    id: str, *, default: Any = ..., default_factory: Callable[[], Any] | None = None
+) -> Any:
     return Stats(id, default=default, default_factory=default_factory)
 
 
@@ -80,7 +107,9 @@ class Statv:
     def update_multi(self, mapping: dict[Stats[T], T]) -> None:
         stats = self.defined_stats()
         if not all(isinstance(k, Stats) and k in stats for k in mapping):
-            raise TypeError(f"invalid ownership of Stats definition for {self.__class__.__name__}")
+            raise TypeError(
+                f"invalid ownership of Stats definition for {self.__class__.__name__}"
+            )
 
         for stat, value in mapping.items():
             self._stats[stat.id] = value
