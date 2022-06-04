@@ -74,7 +74,7 @@ class Stats(Generic[T]):
 
 def stats(
     id: str, *, default: Any = ..., default_factory: Callable[[], Any] | None = None
-) -> Any:
+) -> Any:  # sourcery skip: instance-method-first-arg-name
     return Stats(id, default=default, default_factory=default_factory)
 
 
