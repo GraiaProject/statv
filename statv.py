@@ -63,8 +63,9 @@ class Stats(Generic[T]):
         instance._stats[self.id] = value
 
         for ftr in instance._waiters:
-            ftr.set_result(instance)
-    
+            if not ftr.done() or not ftr.cancelled():
+                ftr.set_result(instance)
+
     def validator(self, validator: StatsValidator[T]):
         if self._validator:
             raise RuntimeError(f"{self.id} already has a validator")
