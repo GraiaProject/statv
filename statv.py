@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import inspect
 from collections import deque
-from typing import Any, Callable, Generic, Protocol, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeVar, overload
 
-from typing_extensions import Self
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 EllipsisType = type(...)
 
@@ -63,7 +64,7 @@ class Stats(Generic[T]):
         instance._stats[self.id] = value
 
         for ftr in instance._waiters:
-            if not ftr.done() or not ftr.cancelled():
+            if not ftr.done() and not ftr.cancelled():
                 ftr.set_result(instance)
 
     def validator(self, validator: StatsValidator[T]):
