@@ -1,6 +1,6 @@
 [project]
 name = "statv"
-version = "0.3.0"
+version = "0.3.1"
 description = "a uniform status implementation for graia project"
 authors = [
     {name = "GreyElaina", email = "GreyElaina@outlook.com"},
