@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Any, Callable, Generic, Protocol, TypeVar, ove
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-EllipsisType = type(...)
-
 T = TypeVar("T")
 
 Statv_T = TypeVar("Statv_T", bound="Statv", contravariant=True)
@@ -28,7 +26,7 @@ class UpdateMonitor(Protocol[Statv_T, T]):
 class Stats(Generic[T]):
     id: str
 
-    default: T | EllipsisType = ...
+    default: T | ellipsis = ...
     default_factory: Callable[[], T] | None = None
 
     _validator: StatsValidator[T] | None
@@ -95,6 +93,7 @@ class Statv:
     def __init__(self, *, init_stats: dict[str, Any] | None = None):
         self._waiters = deque()
         self._stats = {}
+        self._monitors = {}
 
         for stat_define in self.defined_stats():
             if stat_define.default is not ...:
