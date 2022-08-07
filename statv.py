@@ -45,7 +45,7 @@ class Stats(Generic[T]):
         self._validator = validator
 
     @overload
-    def __get__(self, instance: None, owner: None) -> Stats:
+    def __get__(self, instance: None, owner: type[Statv]) -> Self:
         ...
 
     @overload
@@ -120,13 +120,13 @@ class Statv:
     def available(self) -> bool:
         return True
 
-    def update_multi(self, mapping: dict[Stats[T], T]) -> None:
+    def update_multi(self, mapping: dict[Stats[Any], Any]) -> None:
         stats = self.defined_stats()
         if not all(isinstance(k, Stats) and k in stats for k in mapping):
             raise TypeError(f"invalid ownership of Stats definition for {self.__class__.__name__}")
 
         for stat, value in mapping.items():
-            past_value: T = self._stats[stat.id]
+            past_value = self._stats[stat.id]
             if stat._validator:
                 value = stat._validator(stat, past_value, value)
             if past_value != value:
