@@ -107,17 +107,16 @@ def test_validator():
     class DefaultStat(Statv):
         val: Stats[int] = stats("val", default=0)
 
-        @val.validator
+    @DefaultStat.val.validator
+    def _(stats, past, current):
+        return min(max(current, 0), 5)
+
+    with pytest.raises(RuntimeError):
+
+        @DefaultStat.val.validator
         @staticmethod
         def _(stats, past, current):
-            return min(max(current, 0), 5)
-
-        with pytest.raises(RuntimeError):
-
-            @val.validator
-            @staticmethod
-            def _(stats, past, current):
-                return current <= 4
+            return current <= 4
 
     d = DefaultStat()
 
@@ -180,10 +179,9 @@ async def test_multi_validate():
         def available(self) -> bool:
             return self.val
 
-        @v.validator
-        @staticmethod
-        def _(stats, past, current):
-            return min(max(current, 0), 5)
+    @DStat.v.validator
+    def _(stats, past, current):
+        return min(max(current, 0), 5)
 
     q = DStat()
     q.update_multi({DStat.val: True, DStat.v: 7})
