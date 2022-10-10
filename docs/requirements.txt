@@ -1,0 +1,4 @@
+mkdocstrings[python]~=0.19
+mkdocs-section-index~=0.3
+mkdocs-material~=8.5
+black~=22.10
